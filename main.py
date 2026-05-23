@@ -21,13 +21,13 @@ HEIGHT = ROWS * SQUARE_SIZE
 #   False=No True=Yes
 
 GLOBAL_REGISTER = [[[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
+                   [[0,0,0,False,False], [2,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
-                   [[0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
-                   [[2,1,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
+                   [[10,1,0,False,False], [2,1,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]],
                    [[2,1,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False], [0,0,0,False,False]]]
 
 def get_square_under_mouse():
@@ -38,7 +38,7 @@ def get_square_under_mouse():
         return (row, col)
     return None
 
-def show_move_guide(cords):
+def get_move_guide(cords):
     global GLOBAL_REGISTER
 
     available = []
@@ -58,11 +58,13 @@ def show_move_guide(cords):
 
             for i in range(StartScopeA, EndScopeA + 1, 1):
                 for j in range(StartScopeB, EndScopeB + 1, 1):
-                    if GLOBAL_REGISTER[i][j][0] == 0:
+                    if GLOBAL_REGISTER[i][j][0] == 0 or GLOBAL_REGISTER[i][j][0] == 10:
                         available.append((i, j))
 
-    print(available)
-    
+    return available
+
+def display_pieces(screen):
+    global GLOBAL_REGISTER
 
 def draw_grid(screen, hovered, selected):
     isRev = False
@@ -86,6 +88,9 @@ def draw_grid(screen, hovered, selected):
             pygame.draw.rect(screen, color, rect)
             pygame.draw.rect(screen, (50, 50, 50), rect, 1)
 
+            if GLOBAL_REGISTER[row][col][0] == 2:
+                pygame.draw.line(screen, "black", (col *SQUARE_SIZE + 10, (row + 1) * SQUARE_SIZE - 10), (col *SQUARE_SIZE + 70, (row + 1) * SQUARE_SIZE - 10), 5)
+                pygame.draw.line(screen, "black", (SQUARE_SIZE * col + 40, row * SQUARE_SIZE + SQUARE_SIZE - 10), (SQUARE_SIZE * col + 40, row * SQUARE_SIZE + 5), 5)
 def main():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH + 300, HEIGHT))
@@ -97,6 +102,7 @@ def main():
 
     while running:
         hovered = get_square_under_mouse()
+        available = get_move_guide(selected) if selected else None
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -105,15 +111,31 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     clicked = get_square_under_mouse()
-                    print(clicked)
                     if clicked == selected:
                         selected = None
                     else:
-                        selected = clicked
-                        if selected:
-                            print(f"Selected: row={selected[0]}, col={selected[1]}")
-                            show_move_guide((selected[0], selected[1]))
 
+                        if available and clicked in available:
+                            lType = GLOBAL_REGISTER[selected[0]][selected[1]][0]
+                            lOwns = GLOBAL_REGISTER[selected[0]][selected[1]][1]
+                            lHP = GLOBAL_REGISTER[selected[0]][selected[1]][2]
+                            lForest = GLOBAL_REGISTER[selected[0]][selected[1]][3]
+                            lDiscovered = GLOBAL_REGISTER[selected[0]][selected[1]][4]
+
+                            GLOBAL_REGISTER[selected[0]][selected[1]][0] = 0
+                            GLOBAL_REGISTER[selected[0]][selected[1]][1] = 0
+                            GLOBAL_REGISTER[selected[0]][selected[1]][2] = 0
+                            GLOBAL_REGISTER[selected[0]][selected[1]][3] = False
+                            GLOBAL_REGISTER[selected[0]][selected[1]][4] = False
+
+                            GLOBAL_REGISTER[clicked[0]][clicked[1]][0] = lType
+                            GLOBAL_REGISTER[clicked[0]][clicked[1]][1] = lOwns
+                            GLOBAL_REGISTER[clicked[0]][clicked[1]][2] = lHP
+                            GLOBAL_REGISTER[clicked[0]][clicked[1]][3] = lForest
+                            GLOBAL_REGISTER[clicked[0]][clicked[1]][4] = lDiscovered
+
+                        selected = clicked
+                        
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -124,9 +146,19 @@ def main():
                     running = False
 
         screen.fill((30, 30, 30))
+
         draw_grid(screen, hovered, selected)
+
+        if available:
+            for i in available:
+                pixel_x = i[1] * SQUARE_SIZE + 40
+                pixel_y = i[0] * SQUARE_SIZE + 40
+                pygame.draw.circle(screen, "gray", (pixel_x, pixel_y), 8)
+
+        display_pieces(screen)
+
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(30)
 
     pygame.quit()
 
